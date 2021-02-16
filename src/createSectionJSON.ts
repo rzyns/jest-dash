@@ -3,7 +3,7 @@ var fs = require('fs');
 var config = require('./config');
 
 // get base file to itterate over
-var basePath = __dirname + '/../Contents/Resources/Documents/' + config.name + '/docs/' + config.index;
+var basePath = __dirname + '/../Contents/Resources/Documents/' + config.name + '/docs/en/' + config.index;
 var baseSrc = fs.readFileSync(basePath, 'utf8');
 var $ = cheerio.load(baseSrc);
 var pageNamesArray = [];
@@ -49,4 +49,4 @@ $section.each(function(i, elem){
     });
 });
 
-fs.writeFile(path, 'var indexedFiles = ' + JSON.stringify(pageNamesArray, null, 4) + ';\n\nmodule.exports = indexedFiles;', 'utf8');
+fs.writeFileSync(path, 'var indexedFiles = ' + JSON.stringify(pageNamesArray, null, 4) + ';\n\nmodule.exports = indexedFiles;', 'utf8');
