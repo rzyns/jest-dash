@@ -1,35 +1,43 @@
+#!/usr/bin/env bash
 # clean up previous remains, if any
-rm -rf Contents/Resources
-rm -rf Jest.docset
-mkdir -p Contents/Resources/Documents
+pushd .
+mkdir -p Jest.docset/Contents/Resources/Documents
 
 # create a fresh sqlite db
-cd Contents/Resources
+cd Jest.docset/Contents/Resources
 sqlite3 docSet.dsidx 'CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT)'
 sqlite3 docSet.dsidx 'CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path)'
 
 # fetch the whole doc site
 cd Documents
-wget -m -p -E -k -np http://facebook.github.io/jest/
+wget -m -p -E -k -np https://jestjs.io/docs/en/getting-started
 
-# move it around a bit
-mv facebook.github.io/jest ./
-rm -rf facebook.github.io
-cd ../../../
+popd
 
-# create data file from base index page
-node src/createSectionJSON.js
+echo "Create data file from base index page"
+npx --no-install ts-node src/createSectionJSON.ts
 
-# change the documentation markup layout a bit to fit dash's small window
-node src/modifyDocsHTML.js
+echo "Changing the documentation markup layout a bit to fit dash's small window"
+npx --no-install ts-node src/modifyDocsHTML.ts
 
-# read the previously fetched doc site and parse it into sqlite
-node src/index.js
-
-# bundle up!
-mkdir Jest.docset
-cp -r Contents Jest.docset
-cp src/icon* Jest.docset
+echo "Reading the previously fetched doc site and parse it into sqlite..."
+npx --no-install ts-node src/index.ts
+cat > Jest.docset/Contents/info.plist << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>jest</string>
+	<key>CFBundleName</key>
+	<string>Jest</string>
+	<key>DocSetPlatformFamily</key>
+	<string>jest</string>
+	<key>isDashDocset</key>
+	<true/>
+</dict>
+</plist>
+EOF
 
 # Create gzip bundle for Dash Contribution
-tar --exclude='.DS_Store' -cvzf Jest.tgz Jest.docset
+# tar --exclude='.DS_Store' -cvzf Jest.tgz Jest.docset

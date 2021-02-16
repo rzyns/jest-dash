@@ -1,30 +1,41 @@
-var cheerio = require('cheerio');
-var fs = require('fs');
-var flatten = require('lodash.flatten');
-var config = require('./config');
-var indexedFiles = require('./indexedFiles');
+import cheerio from 'cheerio';
+import * as fs from 'fs';
+import config from './config';
+import flatten from 'lodash.flatten';
+
+import { getIndexedFiles } from "./IndexedFiles";
+
+const indexedFiles = getIndexedFiles();
+
+if (!Array.isArray(indexedFiles)) {
+    throw new Error(`Error parsing indexedFiles.json:\n\t${indexedFiles}`);
+}
 
 // this assumes build.sh has been run, and the jest docs fetched into
 // Contents/Resources/Documents/jest
-function getData() {
+export default function getData() {
+    if (!Array.isArray(indexedFiles)) {
+        throw new Error(`Error parsing indexedFiles.json:\n\t${indexedFiles}`);
+    }
+
     var res = indexedFiles.map(function(array) {
-        var path = __dirname + '/../Contents/Resources/Documents/' + config.name + '/docs/' + array.name + '.html';
+        var path = __dirname + '/../Jest.docset/Contents/Resources/Documents/' + config.name + '/docs/en/' + array.name + '.html';
         var src = fs.readFileSync(path, 'utf-8');
         var $ = cheerio.load(src);
 
         var $headers = $(config.pageHeader).first();
 
-        var names = [];
+        var names: string[] = [];
 
-        $headers.each(function(index, elem) {
+        $headers.each(function(_, elem) {
             var name = $($(elem).contents()).text();
 
             names.push(name.trim());
         });
 
-        var url = config.name + '/docs/' + array.name + '.html';
+        var url = config.name + '/docs/en/' + array.name + '.html';
 
-        var res = names.map(function(n, i) {
+        var res = names.map(function(n) {
             return {
                 name: n,
                 type: array.type,
@@ -37,5 +48,3 @@ function getData() {
 
   return flatten(res);
 }
-
-module.exports = getData;

@@ -1,31 +1,55 @@
-var cheerio = require('cheerio');
-var fs = require('fs');
-var config = require('./config');
+import cheerio from 'cheerio';
+import * as fs from 'fs';
+import { basename as path_basename } from 'path';
+import config from "./config";
+
+import { Page } from "./Page";
 
 // get base file to itterate over
-var basePath = __dirname + '/../Contents/Resources/Documents/' + config.name + '/docs/en/' + config.index;
-var baseSrc = fs.readFileSync(basePath, 'utf8');
-var $ = cheerio.load(baseSrc);
-var pageNamesArray = [];
-var $section = $('.' + config.sectionClass);
-var path = __dirname + '/../src/indexedFiles.js';
+const basePath = __dirname + '/../Jest.docset/Contents/Resources/Documents/' + config.name + '/docs/en/' + config.index;
+const baseSrc = fs.readFileSync(basePath, 'utf8');
+const $ = cheerio.load(baseSrc);
+const pageNamesArray: Page[] = [];
+const $section = $('.' + config.sectionClass);
+const path = __dirname + '/../indexedFiles.json';
 
-$section.each(function(i, elem){
+// import * as O from 'fp-ts/Option';
+// import { pipe } from 'fp-ts/function';
+
+function getPageName(element: cheerio.Element) {
+    const href = $(element).attr('href');
+    if (!href) {
+        return 'untitled';
+    }
+
+    try {
+        const url = new URL(href);
+        return path_basename(url.pathname);
+    } catch (e) {
+        if (href.endsWith('.html')) {
+            return path_basename(href, '.html');
+        }
+        return 'untitled';
+    }
+}
+
+$section.each(function(_, elem){
 
     // TODO: create a better config pointer
-    var $sectionHeader = $(this).children(config.headerTag).text();
-    var $sectionLink = $(this).children('ul').children('li').children('a');
+    const $sectionHeader = $(elem).children(config.headerTag).text();
+    const $sectionLink = $(elem).children('ul').children('li').children('a');
 
-    $sectionLink.each(function(i, elem){
-        var page = {};
+    $sectionLink.each(function(_, elem){
+        const page: Page = {} as any;
 
-        if(config.ignoreSection.sectionsArray.indexOf($sectionHeader) !== -1) {
+        if (config.ignoreSection.sectionsArray.indexOf($sectionHeader) !== -1) {
             return;
         }
 
         // $(this).attr('href') returns ie.(guides-containers.html#content)
         // substring removes last 13 characters '.html#content' from href.
-        page.name = $(this).attr('href').substring(0, $(this).attr('href').length - 13);
+        // page.name = $(elem).attr('href')?.substring(0, len ? len - 13 : 0) ?? "Untitled";
+        page.name = getPageName(elem);
 
         if(config.ignorePage.pagesArray.indexOf(page.name) !== -1) {
             return;
@@ -49,4 +73,4 @@ $section.each(function(i, elem){
     });
 });
 
-fs.writeFileSync(path, 'var indexedFiles = ' + JSON.stringify(pageNamesArray, null, 4) + ';\n\nmodule.exports = indexedFiles;', 'utf8');
+fs.writeFileSync(path, JSON.stringify(pageNamesArray, null, 4), 'utf8');

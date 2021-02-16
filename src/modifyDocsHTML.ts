@@ -1,26 +1,34 @@
-var cheerio = require('cheerio');
-var fs = require('fs');
-var config = require('./config');
-var indexedFiles = require('./indexedFiles');
+
+import * as cheerio from 'cheerio';
+import * as fs from 'fs';
+import config from './config';
+
+import { getIndexedFiles } from './IndexedFiles';
+
+const indexedFiles = getIndexedFiles();
+
+if (!Array.isArray(indexedFiles)) {
+    throw new Error("Expected indexedFiles.json to contain an array!");
+}
 
 // remove the left column and the nav bar so that it fits dash's usually small
 // browser screen
-indexedFiles.forEach(function(array, index) {
+indexedFiles.forEach(function(array) {
     //console.log(array);
-    var path = __dirname + '/../Contents/Resources/Documents/' + config.name + '/docs/' + array.name + '.html';
-    var src = fs.readFileSync(path, 'utf8');
-    var $ = cheerio.load(src);
+    const htmlFilePath = __dirname + '/../Jest.docset/Contents/Resources/Documents/' + config.name + '/docs/en/' + array.name + '.html';
+    const src = fs.readFileSync(htmlFilePath, 'utf8');
+    const $ = cheerio.load(src);
 
     var headerClasses = config.pageSubHeaders.toString();
     var $headers = $(headerClasses);
 
-    $headers.each(function(index, elem) {
+    $headers.each(function(_, elem) {
         // Remove "Edit this Page" Button
         $('.edit-page-link').remove();
 
         var name = $($(elem).contents().get(1)).text();
 
-        // TODO: Change "array.toc to somehting more relevant on a page-by-page basis in indexedFiles.js"
+        // TODO: Change "array.toc to somehting more relevant on a page-by-page basis in indexedFiles"
         $(elem).prepend('<a name="//apple_ref/cpp/' + array.toc + '/' + encodeURIComponent(name) + '" class="dashAnchor"></a>');
         $.html();
     });
@@ -36,5 +44,5 @@ indexedFiles.forEach(function(array, index) {
     $('.docMainWrapper').attr('style', 'width:inherit;');
     $('.post').attr('style', 'float:none;margin:auto;');
 
-    fs.writeFileSync(path, $.html(), 'utf8');
+    fs.writeFileSync(htmlFilePath, $.html(), 'utf8');
 });

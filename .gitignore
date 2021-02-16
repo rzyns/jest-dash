@@ -4,3 +4,4 @@ Contents/Resources
 src/docs
 *.docset
 *.tgz
+dist
