@@ -36,7 +36,7 @@ indexedFiles.forEach(function(array) {
     // Remove Header
     $('.fixedHeaderContainer').remove();
     // Remove Side Navigation
-    $('.docsNavContainer').remove();
+    // $('.docsNavContainer').remove();
     // Remove Footer
     $('.nav-footer').remove();
     // Clean up size of page
